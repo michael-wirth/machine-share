@@ -1,46 +1,55 @@
 #! /usr/bin/env node
 
-console.log('exporting.')
+console.log('exporting.');
 
-var fs = require('fs')
-var path = require('path')
-var fse = require('fs.extra')
-var zip = require('node-zip')
-var util = require('./util')
+var os = require('os');
+var fs = require('fs');
+var path = require('path');
+var fse = require('fs.extra');
+var zip = require('node-zip');
+var util = require('./util');
 
-var args = process.argv.slice(2)
+var args = process.argv.slice(2);
 
-var machine = args[0]
+var machine = args[0];
 if (!machine) {
-    console.log('machine-export <machine-name>')
-    process.exit(1)
+    console.log('machine-export <machine-name>');
+    process.exit(1);
 }
 
-var tmp = '/tmp/' + machine + '/'
-fse.rmrfSync(tmp)
+var tmp = path.resolve(os.tmpdir(), process.env.TEMP, machine);
+fse.rmrfSync(tmp);
 
-var configDir = process.env.HOME + '/.docker/machine/machines/' + machine
-util.copyDir(configDir, tmp)
-fs.mkdirSync(tmp + 'certs')
+var home = os.homedir();
+var configDir = path.resolve(home, '.docker/machine/machines', machine);
 
-processConfig()
-createZip()
+fse.copyRecursive(configDir, tmp, function(err) {
+	if (err) {
+		throw err;
+	}
+	
+	processConfig();
+	createZip();	
+});
 
 function processConfig() {
-    var home = process.env['HOME']
-    var configName = tmp + 'config.json';
-    var configFile = fs.readFileSync(configName)
-    var config = JSON.parse(configFile.toString())
+    var configName = path.resolve(tmp, 'config.json');
+    var configFile = fs.readFileSync(configName);
+    var config = JSON.parse(configFile.toString());
+	var certsDir = path.resolve(home, '.docker/machine/certs');
+	fse.mkdirp(path.resolve(tmp, 'certs'));
 
     util.recurseJson(config, function (parent, key, value) {
         if (typeof value === 'string') {
-            if (util.startsWith(value, home + '/.docker/machine/certs/')) {
-                var name = value.substring(value.lastIndexOf('/') + 1)
-                util.copy(value, tmp + 'certs/' + name)
-                value = home + '/.docker/machine/certs/' + machine + '/' + name
+			var tempPath = path.normalize(value);
+            if (tempPath.length > certsDir.length && util.startsWith(tempPath, certsDir)) {
+				console.log(key, tempPath);
+                var name = path.basename(tempPath);
+                fse.copy(tempPath, path.resolve(tmp, 'certs', name));
+                value = path.resolve(home, '.docker/machine/certs', machine, name);
             }
-            value = value.replace(home, '{{HOME}}')
-            parent[key] = value
+            value = value.replace(home, '{{HOME}}').replace(/\\/g, '/');
+            parent[key] = value;
         }
     })
 
