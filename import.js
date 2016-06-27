@@ -16,8 +16,8 @@ if (!machine) {
     process.exit(1)
 }
 
-var machine = path.basename(machine, '.zip');
-var configDir = path.resolve(os.homedir(), '.docker/machine/machines', machine);
+var machineName = path.basename(machine, '.zip');
+var configDir = path.resolve(os.homedir(), '.docker/machine/machines', machineName);
 try {
     fs.statSync(configDir)
     console.log('that machine already exists')
@@ -26,9 +26,9 @@ try {
     //ok
 }
 
-var tmp = path.resolve(os.tmpdir(), machine);
+var tmp = path.resolve(os.tmpdir(), machineName);
 fse.rmrfSync(tmp);
-var certsDir = path.resolve(os.homedir(), '.docker/machine/certs', machine);
+var certsDir = path.resolve(os.homedir(), '.docker/machine/certs', machineName);
 fse.rmrfSync(certsDir);
 
 unzip();
@@ -50,7 +50,7 @@ fse.copyRecursive(path.resolve(tmp, 'certs'), certsDir, function(err) {
 
 function unzip() {
     var zip = new require('node-zip')();
-    zip.load(fs.readFileSync(machine + '.zip'));
+    zip.load(fs.readFileSync(machine));
     for (var f in zip.files) {
         var file = zip.files[f];
         if (!file.dir) {
