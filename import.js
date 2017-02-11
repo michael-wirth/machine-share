@@ -35,17 +35,17 @@ unzip();
 processConfig();
 
 fse.copyRecursive(path.resolve(tmp, 'certs'), certsDir, function(err) {
-	if (err) {
-		throw err;
-	}
-	fse.rmrfSync(path.resolve(tmp, 'certs'));
+        if (err) {
+                throw err;
+        }
+        fse.rmrfSync(path.resolve(tmp, 'certs'));
 
-	fse.copyRecursive(tmp, configDir, function(err) {
-		if (err) {
-			throw err;
-		}
-		fse.rmrfSync(tmp);
-	});
+        fse.copyRecursive(tmp, configDir, function(err) {
+                if (err) {
+                        throw err;
+                }
+                fse.rmrfSync(tmp);
+        });
 });
 
 function unzip() {
@@ -54,7 +54,7 @@ function unzip() {
     for (var f in zip.files) {
         var file = zip.files[f];
         if (!file.dir) {
-            fse.mkdirp(path.dirname(path.resolve(tmp, file.name)));
+            fse.mkdirsSync(path.dirname(path.resolve(tmp, file.name)));
             fs.writeFileSync(path.resolve(tmp, file.name), file.asNodeBuffer());
         }
     }
@@ -68,9 +68,9 @@ function processConfig() {
 
     util.recurseJson(config, function (parent, key, value) {
         if (typeof value === 'string') {
-			if (value.indexOf('{{HOME}}' > -1)) {
-				parent[key] = path.normalize(value.replace('{{HOME}}', home));
-			}
+                        if (value.indexOf('{{HOME}}' > -1)) {
+                                parent[key] = path.normalize(value.replace('{{HOME}}', home));
+                        }
         }
     })
 
